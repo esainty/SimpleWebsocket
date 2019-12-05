@@ -44,7 +44,7 @@ namespace SimpleWebsocket {
                 ArraySegment<byte> buffer = new ArraySegment<byte>(encodedMessage, 0, encodedMessage.Length);
                 try {
                     await cws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
-                    Console.WriteLine("Client sent message 'Ping'");
+                    //Console.WriteLine("Client sent message 'Ping'");
                 } catch (Exception e) {
                     Console.WriteLine(e);
                     return;
@@ -52,7 +52,7 @@ namespace SimpleWebsocket {
                 byte[] receivedMessage = new byte[1024];
                 await cws.ReceiveAsync(new ArraySegment<byte>(receivedMessage), CancellationToken.None);
                 string decodedMessage = Encoding.UTF8.GetString(receivedMessage);
-                Console.WriteLine("Client received message: {0}", decodedMessage);
+                //Console.WriteLine("Client received message: {0}", decodedMessage);
                 Thread.Sleep(1000);
             }
         }

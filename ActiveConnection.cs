@@ -52,13 +52,13 @@ namespace SimpleWebsocket {
                         packet = newPacket;
                     }
                     String message = Encoding.UTF8.GetString(packet);
-                    Console.WriteLine("Server received message: {0}", message);
+                    //Console.WriteLine("Server received message: {0}", message);
                     Thread.Sleep(1000);
                     byte[] encodedMessage = Encoding.UTF8.GetBytes("Pong");
                     ArraySegment<byte> buffer = new ArraySegment<byte>(encodedMessage, 0, encodedMessage.Length);
                     try {
                         await webSocket.SendAsync(encodedMessage, WebSocketMessageType.Text, true, CancellationToken.None);
-                        Console.WriteLine("Server sent message: 'Pong'");
+                        //Console.WriteLine("Server sent message: 'Pong'");
                     }
                     catch (Exception e) {
                         Console.WriteLine(e);
@@ -67,12 +67,16 @@ namespace SimpleWebsocket {
                 }
             } else {
                 // If request is not a websocket request, return default landing HTML. 
-                string landingPage = File.ReadAllText(@"pages\landingPage.html");
+                string landingPage = "";
+                try {
+                    landingPage = File.ReadAllText("pages/landingPage.html");
+                } catch (Exception e) {
+                    Console.WriteLine(e);
+                }
                 byte[] data = Encoding.UTF8.GetBytes(landingPage);
                 response.ContentType = "text/html";
                 response.ContentEncoding = Encoding.UTF8;
                 response.ContentLength64 = data.LongLength;
-
                 await response.OutputStream.WriteAsync(data, 0, data.Length);
                 response.Close();
             }
@@ -91,7 +95,7 @@ namespace SimpleWebsocket {
             {
                 await log.WriteLineAsync($"Connection ID: {id} | {DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}:{DateTime.Now.Millisecond}");
                 await log.WriteLineAsync($"URL accessed: {request.Url.ToString()}");
-                await log.WriteLineAsync($"HTTP Method: {request.HttpMethod}");
+                await log.WriteLineAsync($"Websocket Request: {request.IsWebSocketRequest}");
                 await log.WriteLineAsync($"Client Hostname: {request.UserHostName}");
                 await log.WriteLineAsync("------------------------\r\n");
             }
