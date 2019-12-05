@@ -1,11 +1,9 @@
 using System;
-using System.IO;
-using System.Text;
 using System.Net;
 using System.Collections.Generic;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace SimpleWebsocket {
     public class WebsocketServer {
@@ -23,8 +21,8 @@ namespace SimpleWebsocket {
         }
 
         public Task startServer(int maxConnections = 10, int frameSize = 125) {
-            this.maxConnections = 10;
-            this.frameSize = 125;
+            this.maxConnections = maxConnections;
+            this.frameSize = frameSize;
             requestCount = 0;
             serverIsRunning = true;
             cts = new CancellationTokenSource();
@@ -56,9 +54,14 @@ namespace SimpleWebsocket {
 
                 if (triggerTask == contextTask) {
                     Console.WriteLine("Connection Received");
-                    if (connections.Count <= maxConnections) {
+                    if (connections.Count < maxConnections) {
                         // Create thread for the connection. Propogate the cancellation token.
                         connections.Add(new ActiveConnection(await contextTask, ++requestCount, frameSize));
+                    } else {
+                        HttpListenerContext context = await contextTask;
+                        HttpListenerResponse response = context.Response;
+                        response.StatusCode = 503;
+                        response.Close();
                     }
                 } else {
                     if (token.IsCancellationRequested) {

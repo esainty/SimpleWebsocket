@@ -12,7 +12,7 @@ namespace SimpleWebsocket {
 
             Task clientInstance1 = client1.startClient();
             Task clientInstance2 = client2.startClient();
-            
+
             try {
                 await connection;
             } catch (OperationCanceledException) {
