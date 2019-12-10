@@ -7,11 +7,14 @@ namespace SimpleWebsocket {
         static async Task Main(string[] args) {
             WebsocketServer server = new WebsocketServer();
             Task connection = server.startServer();
-            Client client1 = new Client();
-            Client client2 = new Client();
 
-            Task clientInstance1 = client1.startClient();
-            Task clientInstance2 = client2.startClient();
+            await Task.Delay(2000);
+            Client[] clients = new Client[15];
+            Task[] instances = new Task[15];
+            for (int i = 0; i < 15; i++) {
+                clients[i] = new Client();
+                instances[i] = clients[i].startClient();
+            }
 
             try {
                 await connection;
@@ -19,7 +22,6 @@ namespace SimpleWebsocket {
                 Console.WriteLine("Server instance shutdown");
             }
             
-            await clientInstance1;
             Console.WriteLine("Program complete");
         }
     }

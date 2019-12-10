@@ -30,8 +30,8 @@ namespace SimpleWebsocket {
             try {
                 await cws.ConnectAsync(new Uri(serverURI), CancellationToken.None);
                 Console.WriteLine("Client state is: {0}", cws.State);
-            } catch (Exception e) {
-                Console.WriteLine(e);
+            } catch (WebSocketException e) {
+                Console.WriteLine("Connection refused with error: {0}", e.Message);
                 return;
             }
             while (cws.State == WebSocketState.Open) {
@@ -45,8 +45,8 @@ namespace SimpleWebsocket {
                 try {
                     await cws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
                     //Console.WriteLine("Client sent message 'Ping'");
-                } catch (Exception e) {
-                    Console.WriteLine(e);
+                } catch (WebSocketException e) {
+                    Console.WriteLine("Message failed to send with error: {0}", e.Message);
                     return;
                 }
                 byte[] receivedMessage = new byte[1024];
