@@ -10,24 +10,24 @@ using System.Threading.Tasks;
 namespace SimpleWebsocket {
     public class HttpHandler {
 
-        Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, int>> paths;
+        private Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, int>> _paths;
 
         public HttpHandler() {
-            paths = new Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, int>>();
+            _paths = new Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, int>>();
         }
 
         public void addPath(string path, Func<HttpListenerRequest, HttpListenerResponse, int> lambda) {
-            paths.Add(path, lambda);
+            _paths.Add(path, lambda);
         }
 
         public async Task handleHttpRequestAsync(HttpListenerRequest req, HttpListenerResponse res) {
             string path = req.RawUrl;
-            if (paths.Count == 0) {
+            if (_paths.Count == 0) {
                 byte[] data = prepareHtmlResponse(res, "pages/landingPage.html");
                 await sendResponse(res, data);
-            } else if (paths.ContainsKey(path)) {
+            } else if (_paths.ContainsKey(path)) {
                 try {
-                    int result = paths[path](req, res);
+                    int result = _paths[path](req, res);
                 } catch (Exception e) {
                     Console.WriteLine(e);
                 }

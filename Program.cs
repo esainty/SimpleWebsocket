@@ -6,9 +6,9 @@ namespace SimpleWebsocket {
     class Program {
         static async Task Main(string[] args) {
             WebsocketServer server = new WebsocketServer();
-            Task connection = server.startServer();
+            Task connection = server.startServerAsync();
+            
 
-            await Task.Delay(2000);
             Client[] clients = new Client[15];
             Task[] instances = new Task[15];
             for (int i = 0; i < 15; i++) {
