@@ -50,7 +50,7 @@ namespace SimpleWebsocket {
 
         private async Task _watchForIncomingConnectionsAsync(CancellationToken token) {
             while (_serverIsRunning) {
-                Console.WriteLine("Waiting for connections");
+                //Console.WriteLine("Waiting for connections");
 
                 // Wait for a connection on a new thread.
                 Task<HttpListenerContext> contextTask = _listener.GetContextAsync();
@@ -78,7 +78,7 @@ namespace SimpleWebsocket {
         
         private async Task _handleConnectionAsync(Task<HttpListenerContext> contextTask) {
             HttpListenerContext context = await contextTask;
-            Console.WriteLine("Connection Received");
+            // Console.WriteLine("Connection Received");
             
             HttpListenerRequest req = context.Request;
             // Log request to file. 

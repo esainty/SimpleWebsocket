@@ -27,5 +27,6 @@ namespace SimpleWebsocket {
         public static string jpeg = "image/jpeg";
         public static string png = "image/png";
         public static string gif = "image/gif";
+        public static string icon = "image/x-icon";
     }
 }

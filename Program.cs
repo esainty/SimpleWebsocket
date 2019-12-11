@@ -1,5 +1,6 @@
 ﻿using System;
 using SimpleWebsocket;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SimpleWebsocket {
@@ -7,7 +8,6 @@ namespace SimpleWebsocket {
         static async Task Main(string[] args) {
             WebsocketServer server = new WebsocketServer();
             Task connection = server.startServerAsync();
-            
 
             Client[] clients = new Client[15];
             Task[] instances = new Task[15];
@@ -15,7 +15,7 @@ namespace SimpleWebsocket {
                 clients[i] = new Client();
                 instances[i] = clients[i].startClient();
             }
-
+            
             try {
                 await connection;
             } catch (OperationCanceledException) {
