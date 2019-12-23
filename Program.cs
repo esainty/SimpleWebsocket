@@ -11,11 +11,11 @@ namespace SimpleWebsocket {
             server.addPublicDirectory(@"resources/public");
             server.addRoutes(
                 HttpHandler.createRoute("/", async (HttpListenerRequest req, HttpListenerResponse res) => {
-                    await HttpHandler.sendResponseAsync(res, HttpHandler.prepareHtmlResponse(res, "resources/public/home.html", true));
+                    await HttpHandler.sendResponseAsync(res, HttpHandler.prepareWebResponse(res, "resources/public/home.html"));
                     return 200;
                 }),
                 HttpHandler.createRoute("/spooky", async (HttpListenerRequest req, HttpListenerResponse res) => {
-                    await HttpHandler.sendResponseAsync(res, HttpHandler.prepareHtmlResponse(res, "resources/public/secret.html", true));
+                    await HttpHandler.sendResponseAsync(res, HttpHandler.prepareWebResponse(res, "resources/public/secret.html"));
                     return 200;
                 })
             );

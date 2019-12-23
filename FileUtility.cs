@@ -7,14 +7,27 @@ using System.Text.RegularExpressions;
 namespace SimpleWebsocket {
 
     public static class FileUtility {
-        public static string html = "text/html";
-        public static string css = "text/css";
-        public static string js = "application/javascript";
-        public static string json = "application/json";
-        public static string jpeg = "image/jpeg";
-        public static string png = "image/png";
-        public static string gif = "image/gif";
-        public static string icon = "image/x-icon";
+        private static Dictionary<string, string> contentLookupTable = new Dictionary<string, string>(){
+            {".html", "text/html"},
+            {".css", "text/css"},
+            {".js", "application/javascript"},
+            {".json", "application/json"},
+            {".jpg", "image/jpeg"},
+            {".png", "image/png"},
+            {".gif", "image/gif"},
+            {".ico", "image/x-icon"},
+        };
+
+        public static Dictionary<ContentType, string> contentTypes = new Dictionary<ContentType, string>(){
+            {ContentType.HTML, "text/html"},
+            {ContentType.CSS, "text/css"},
+            {ContentType.JS, "application/javascript"},
+            {ContentType.JSON, "application/json"},
+            {ContentType.JPEG, "image/jpeg"},
+            {ContentType.PNG, "image/png"},
+            {ContentType.GIF, "image/gif"},
+            {ContentType.ICON, "image/x-icon"},
+        };
 
         private static HashSet<string> _webTypes = new HashSet<string> {".html", ".css", ".js"};
         private static HashSet<string> _imageTypes = new HashSet<string> {".jpg", ".png", ".gif", ".bmp", ".tiff", ".ico"};
@@ -24,11 +37,7 @@ namespace SimpleWebsocket {
 
         public static FileType determineFileType(string extension) {
             if (_webTypes.Contains(extension)) {
-                switch (extension) {
-                    case ".html": return FileType.HTML;
-                    case ".css": return FileType.CSS;
-                    case ".js": return FileType.JS;
-                }
+                return FileType.Web;
             } else if (_imageTypes.Contains(extension)) {
                 return FileType.Image;
             } else if (_audioTypes.Contains(extension)) {
@@ -40,6 +49,14 @@ namespace SimpleWebsocket {
             }
             // If no valid return type found, throw exception.
             throw new UriFormatException("Unsupported filetype requested");
+        }
+
+        public static string determineContentType(string extension) {
+            try {
+                return contentLookupTable[extension];
+            } catch (Exception) {
+                throw new UriFormatException("Unsupported content type requested");
+            }
         }
 
         public static bool isResourcePath(string path) {
@@ -57,9 +74,18 @@ namespace SimpleWebsocket {
         Image,
         Video,
         Audio,
+        Web,
+        Text,
+    }
+
+    public enum ContentType {
         HTML, 
         CSS, 
         JS, 
-        Text,
+        JSON, 
+        JPEG, 
+        PNG, 
+        GIF, 
+        ICON
     }
 }
