@@ -10,40 +10,80 @@ using System.Threading.Tasks;
 
 namespace SimpleWebsocket {
     public class HttpHandler {
-        public bool allowPublicResources;
-        private Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, int>> _paths;
+        private bool _allowPublicResources;
+        private string _publicDirectory;
+        private Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, Task<int>>> _routes;
 
         public HttpHandler(bool allowPublicResources = false) {
-            this._paths = new Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, int>>();
-            this.allowPublicResources = allowPublicResources;
+            this._routes = new Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, Task<int>>>();
+            this._allowPublicResources = allowPublicResources;
         }
 
-        public void addPath(string path, Func<HttpListenerRequest, HttpListenerResponse, int> lambda) {
-            _paths.Add(path, lambda);
+        public void addPath(string path, Func<HttpListenerRequest, HttpListenerResponse, Task<int>> lambda) {
+            _routes.Add(path, lambda);
+        }
+
+        public void addPublicDirectory(string directory) {
+            Regex directoryPattern = new Regex(@"^(\/?\w+)+$");
+            if (directoryPattern.IsMatch(directory)) {
+                _allowPublicResources = true;
+                _publicDirectory = directory;
+            } else {
+                throw new ArgumentException(@"Directory invalid. Must not end with slash.");
+            }
         }
 
         public async Task handleHttpRequestAsync(HttpListenerRequest req, HttpListenerResponse res) {
             string path = req.RawUrl;
-            if (_paths.Count == 0) {
-                byte[] data = prepareHtmlResponse(res, "pages/landingPage.html");
-                await sendResponse(res, data);
-            } else if (_paths.ContainsKey(path)) {
+
+            // Checks if specified resource exists and is allowed to be accessed.
+            if (FileUtility.isResourcePath(path)) {
+                if (_allowPublicResources) {
+                    if (File.Exists(_publicDirectory + path)) {
+                        FileType filetype = FileUtility.determineFileType(FileUtility.getFileExtension(path));
+                        switch (filetype) {
+                            case FileType.HTML: 
+                                byte[] htmlData = prepareHtmlResponse(res, _publicDirectory + path, true);
+                                await sendResponseAsync(res, htmlData);
+                                break;
+                            case FileType.Image: 
+                                byte[] imageData = prepareImageResponse(res, _publicDirectory + path);
+                                await sendResponseAsync(res, imageData);
+                                break;
+                            default: 
+                                // No handler set up for file type. Access denied.
+                                await sendErrorResponseAsync(res, 403);
+                                break;
+                        }
+                    } else {
+                        // If file cannot be found
+                        await sendErrorResponseAsync(res, 404);
+                    }
+                } else {
+                    // If resource access is disallowed
+                    await sendErrorResponseAsync(res, 403);
+                }
+
+            // If no routes exist return default lander
+            } else if (_routes.Count == 0) {
+                if (File.Exists(_publicDirectory + "/index.html")) {
+                    byte[] data = prepareHtmlResponse(res, _publicDirectory + "/index.html");
+                    await sendResponseAsync(res, data);
+                } else {
+                    await sendErrorResponseAsync(res, 403);
+                }
+
+            // Check if list of routes contains the specified path
+            } else if (_routes.ContainsKey(path)) {
                 try {
-                    int result = _paths[path](req, res);
+                    int result = await _routes[path](req, res);
                 } catch (Exception e) {
                     Console.WriteLine(e);
                 }
-            } else if (isResourcePath(path)) {
-                if (allowPublicResources) {
-                    if (path == "favicon.ico") {
-                        prepareImageResponse(res, path);
-                    }
-                } else {
-                    sendErrorResponse(res, 403);
-                }
+
+            // If route cannot be found, return 404
             } else {    
-                sendErrorResponse(res, 404);
-                throw new HttpListenerException(404, "Unknown URI accessed");
+                await sendErrorResponseAsync(res, 404);
             }
         }
 
@@ -60,7 +100,7 @@ namespace SimpleWebsocket {
                 htmlstring = html;
             }   
             byte[] data = Encoding.UTF8.GetBytes(htmlstring);
-            res.ContentType = ContentType.html;
+            res.ContentType = FileUtility.html;
             res.ContentEncoding = Encoding.UTF8;
             res.ContentLength64 = data.LongLength;
             return data;
@@ -79,7 +119,7 @@ namespace SimpleWebsocket {
                 jsonstring = json;
             }  
             byte[] data = Encoding.UTF8.GetBytes(jsonstring);
-            res.ContentType = ContentType.json;
+            res.ContentType = FileUtility.json;
             res.ContentEncoding = Encoding.UTF8;
             res.ContentLength64 = data.LongLength;
             return data;
@@ -96,44 +136,41 @@ namespace SimpleWebsocket {
             imagestream.Read(data, 0, (int)imagestream.Length);
             imagestream.Close();
             
-            string extension = getFileExtension(path);
+            string extension = FileUtility.getFileExtension(path);
             switch (extension) {
-                case "jpg": 
-                    res.ContentType = ContentType.icon;
+                case ".jpg": 
+                    res.ContentType = FileUtility.icon;
                     break;
-                case "png":
-                    res.ContentType = ContentType.png;
+                case ".png":
+                    res.ContentType = FileUtility.png;
                     break;
-                case "gif":
-                    res.ContentType = ContentType.gif;
+                case ".gif":
+                    res.ContentType = FileUtility.gif;
                     break;
-                case "ico":
-                    res.ContentType = ContentType.icon;
+                case ".ico":
+                    res.ContentType = FileUtility.icon;
                     break;
                 default: 
-                    throw new FormatException($"File type {path} not accepted.");
+                    throw new UriFormatException($"File type {extension} not accepted.");
             }
             res.ContentLength64 = data.LongLength;
 
             return data;
         }
 
-        public static bool isResourcePath(string path) {
-            Regex resourcePattern = new Regex(@"/^[^ ]*\.[a-z]+$/gi");
-            return resourcePattern.IsMatch(path) ? true : false;
+        public static Tuple<string, Func<HttpListenerRequest, HttpListenerResponse, Task<int>>> createRoute(string route, Func<HttpListenerRequest, HttpListenerResponse, Task<int>> lambda) {
+            return new Tuple<string, Func<HttpListenerRequest, HttpListenerResponse, Task<int>>>(route, lambda);
         }
 
-        public static string getFileExtension(string path) {
-            Regex extensionPattern = new Regex(@"/\.[a-z0-9]*$/gi");
-            return extensionPattern.Match(path).Value;
-        }
-
-        public static void sendErrorResponse(HttpListenerResponse res, int errorCode) {
+        public static async Task sendErrorResponseAsync(HttpListenerResponse res, int errorCode, byte[] data = null) {
+            if (data != null) {
+                await res.OutputStream.WriteAsync(data, 0, data.Length);
+            }
             res.StatusCode = errorCode;
             res.Close();
         }
 
-        public static async Task sendResponse(HttpListenerResponse res, byte[] data) {
+        public static async Task sendResponseAsync(HttpListenerResponse res, byte[] data) {
             await res.OutputStream.WriteAsync(data, 0, data.Length);
             res.Close();
         }

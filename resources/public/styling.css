@@ -1,0 +1,9 @@
+p {
+    color: red;
+}
+
+h2 {
+    color: darkgray;
+    border-radius: 5px;
+    border-color: darkred;
+}

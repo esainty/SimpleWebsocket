@@ -42,9 +42,17 @@ namespace SimpleWebsocket {
             _cts.Cancel();
         }
 
-        public void addPaths(params Tuple<string, Func<HttpListenerRequest, HttpListenerResponse, int>>[] paths) {
+        public void addRoutes(params Tuple<string, Func<HttpListenerRequest, HttpListenerResponse, Task<int>>>[] paths) {
             for (int i = 0; i < paths.Length; i++) {
                 _httpHandler.addPath(paths[i].Item1, paths[i].Item2);
+            }
+        }
+
+        public void addPublicDirectory(string path) {
+            if (!_serverIsRunning) {
+                _httpHandler.addPublicDirectory(path);
+            } else {
+                throw new InvalidOperationException("Cannot set public directory while server is running");
             }
         }
 
@@ -92,7 +100,7 @@ namespace SimpleWebsocket {
                     // Create thread for the connection.
                     _connections.Add(new WebsocketConnection(webSocket, ++_requestCount, _frameSize));
                 } else {
-                    HttpHandler.sendErrorResponse(context.Response, 503);
+                    await HttpHandler.sendErrorResponseAsync(context.Response, 503);
                 }
                 
             } else {
